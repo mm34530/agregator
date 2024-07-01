@@ -26,28 +26,41 @@ func (r *Receiver) ProcessMessage(msgType string, msg interface{}) {
 
 	switch msgType {
 	case "BussinesPartnerA":
-		bp := msg.(producer.BussinesPartnerA)
-		for _, sourceID := range bp.SourceID {
-			field := fmt.Sprintf("%s-%s-%d", bp.Country, sourceID, roundUpDuration(bp.ResolvedAt.Sub(bp.CreatedAt)))
+		bp, ok := msg.(producer.BussinesPartnerA)
+		if !ok {
+			log.Printf("Error: invalid message type %T", msg)
 
-			if bp.ResolvedAt.Sub(bp.CreatedAt) > 23*time.Hour {
-				log.Printf("Warning: Resolution time is higher than 23 hours for message %v", bp)
-			}
-
-			r.stats[field]++
+			return
 		}
+
+		cratedAt := time.Unix(int64(bp.CreatedAt), 0)
+		resolvedAt := time.Unix(int64(bp.ResolvedAt), 0)
+
+		field := fmt.Sprintf("%s-%v-%d", bp.Country, bp.SourceID, roundUpDuration(resolvedAt.Sub(cratedAt)))
+
+		if resolvedAt.Sub(cratedAt) > 23*time.Hour {
+			log.Printf("Warning: Resolution time is higher than 23 hours for message %v", bp)
+		}
+
+		r.stats[field]++
 
 	case "BussinesPartnerB":
-		bp := msg.(producer.BussinesPartnerB)
-		for _, owner := range bp.Origin.Owner {
-			field := fmt.Sprintf("%s-%s-%d", bp.Origin.Geo, owner, roundUpDuration(bp.Processing.Duration))
+		bp, ok := msg.(producer.BussinesPartnerB)
+		if !ok {
+			log.Printf("Error: invalid message type %T", msg)
 
-			if bp.Processing.Duration > 23*time.Hour {
-				log.Printf("Warning: Resolution time is higher than 23 hours for message %v", bp)
-			}
-
-			r.stats[field]++
+			return
 		}
+
+		duration := time.Duration(bp.Processing.Duration) * time.Second
+
+		field := fmt.Sprintf("%s-%v-%d", bp.Origin.Geo, bp.Origin, roundUpDuration(duration))
+
+		if duration > 23*time.Hour {
+			log.Printf("Warning: Resolution time is higher than 23 hours for message %v", bp)
+		}
+
+		r.stats[field]++
 	}
 }
 

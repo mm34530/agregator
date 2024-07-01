@@ -3,7 +3,6 @@ package producer
 import (
 	"errors"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -20,7 +19,7 @@ func NewGenerator() *Generate {
 	}
 }
 
-func (g *Generate) GenerateMessage(msgType string, source string) (interface{}, error) {
+func (g *Generate) GenerateMessage(msgType string, source int) (interface{}, error) {
 	switch msgType {
 	case BussinesPartnerAType:
 		return g.GenerateBussinesAPartnerAData(source), nil
@@ -31,31 +30,34 @@ func (g *Generate) GenerateMessage(msgType string, source string) (interface{}, 
 	}
 }
 
-func (g *Generate) GenerateBussinesAPartnerAData(source string) BussinesPartnerA {
+func (g *Generate) GenerateBussinesAPartnerAData(source int) BussinesPartnerA {
 	id := uuid.New().String()
-	sourceID := strings.Split(source, ",")
 	countryCode := g.GenerateCountry()
 	createdAt, resolvedAt := g.GenerateRandomDates()
 
 	return BussinesPartnerA{
 		ID:         id,
-		SourceID:   sourceID,
+		SourceID:   source,
 		Country:    countryCode,
 		CreatedAt:  createdAt,
 		ResolvedAt: resolvedAt,
 	}
 }
 
-func (g *Generate) GenerateBussinesBPartnerBData(source string) BussinesPartnerB {
+func (g *Generate) GenerateBussinesBPartnerBData(source int) BussinesPartnerB {
 	g.sequentialNumber.Add(1)
 
-	owner := strings.Split(source, ",")
 	createdAt, resolvedAt := g.GenerateRandomDates()
+
+	createdAtTime := time.Unix(int64(createdAt), 0)
+	resolvedAtTime := time.Unix(int64(resolvedAt), 0)
+
+	duration := time.Duration(rand.Intn(int(resolvedAtTime.Sub(createdAtTime).Seconds())))
 
 	return BussinesPartnerB{
 		TaskID:     int(g.sequentialNumber.Load()),
-		Origin:     Origin{Owner: owner, Geo: g.GenerateCountry()},
-		Processing: Processing{At: createdAt, Duration: time.Duration(rand.Intn(int(resolvedAt.Sub(createdAt).Seconds())))},
+		Origin:     Origin{Owner: source, Geo: g.GenerateCountry()},
+		Processing: Processing{At: createdAt, Duration: int(duration.Seconds())},
 	}
 }
 
@@ -93,11 +95,11 @@ func (g *Generate) GenerateCountry() string {
 	return countryCodes[rand.Intn(len(countryCodes))]
 }
 
-func (g *Generate) GenerateRandomDates() (time.Time, time.Time) {
+func (g *Generate) GenerateRandomDates() (int, int) {
 	now := time.Now()
 
 	createdAt := now.Add(-time.Duration(rand.Intn(24*60*60)) * time.Second)
 
 	resolvedAt := createdAt.Add(time.Duration(rand.Intn(int(now.Sub(createdAt).Seconds()))) * time.Second)
-	return createdAt, resolvedAt
+	return int(createdAt.Unix()), int(resolvedAt.Unix())
 }

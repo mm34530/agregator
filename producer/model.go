@@ -1,18 +1,16 @@
 package producer
 
-import "time"
-
 const (
 	BussinesPartnerAType = "bussines_partner_a"
 	BussinesPartnerBType = "bussines_partner_b"
 )
 
 type BussinesPartnerA struct {
-	ID         string    `json:"id"`
-	SourceID   []string  `json:"source_id"`
-	Country    string    `json:"country"`
-	CreatedAt  time.Time `json:"created_at"`
-	ResolvedAt time.Time `json:"resolved_at"`
+	ID         string `json:"id"`
+	SourceID   int    `json:"source_id"`
+	Country    string `json:"country"`
+	CreatedAt  int    `json:"created_at"`
+	ResolvedAt int    `json:"resolved_at"`
 }
 
 type BussinesPartnerB struct {
@@ -22,11 +20,11 @@ type BussinesPartnerB struct {
 }
 
 type Origin struct {
-	Owner []string `json:"owner"`
-	Geo   string   `json:"geo"`
+	Owner int    `json:"owner"`
+	Geo   string `json:"geo"`
 }
 
 type Processing struct {
-	At       time.Time     `json:"at"`
-	Duration time.Duration `json:"duration"`
+	At       int `json:"at"`
+	Duration int `json:"duration"`
 }
