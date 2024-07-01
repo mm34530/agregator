@@ -25,7 +25,7 @@ func Test_ReceiveMessage(t *testing.T) {
 		receiver := receiver.New()
 
 		for _, message := range messages {
-			receiver.ProcessMessage("BussinesPartnerA", message)
+			receiver.ProcessMessage(producer.BussinesPartnerAType, message)
 		}
 
 		exapected := map[string]int{

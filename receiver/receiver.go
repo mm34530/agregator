@@ -2,11 +2,14 @@ package receiver
 
 import (
 	"agregator/producer"
+	"errors"
 	"fmt"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/msales/streams/v6"
 )
 
 type Receiver struct {
@@ -20,17 +23,15 @@ func New() *Receiver {
 	}
 }
 
-func (r *Receiver) ProcessMessage(msgType string, msg interface{}) {
+func (r *Receiver) ProcessMessage(msgType string, msg interface{}) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
 	switch msgType {
-	case "BussinesPartnerA":
+	case producer.BussinesPartnerAType:
 		bp, ok := msg.(producer.BussinesPartnerA)
 		if !ok {
-			log.Printf("Error: invalid message type %T", msg)
-
-			return
+			return errors.New("Error: invalid message type %T")
 		}
 
 		cratedAt := time.Unix(int64(bp.CreatedAt), 0)
@@ -44,12 +45,10 @@ func (r *Receiver) ProcessMessage(msgType string, msg interface{}) {
 
 		r.stats[field]++
 
-	case "BussinesPartnerB":
+	case producer.BussinesPartnerBType:
 		bp, ok := msg.(producer.BussinesPartnerB)
 		if !ok {
-			log.Printf("Error: invalid message type %T", msg)
-
-			return
+			return errors.New("Error: invalid message type %T")
 		}
 
 		duration := time.Duration(bp.Processing.Duration) * time.Second
@@ -61,7 +60,12 @@ func (r *Receiver) ProcessMessage(msgType string, msg interface{}) {
 		}
 
 		r.stats[field]++
+
+	default:
+		return errors.New("Error: invalid message type")
 	}
+
+	return nil
 }
 
 func roundUpDuration(d time.Duration) int {
@@ -72,4 +76,15 @@ func (r *Receiver) GetStats() map[string]int {
 	r.m.Lock()
 	defer r.m.Unlock()
 	return r.stats
+}
+
+func (r *Receiver) WithPipe(pipe streams.Pipe) {
+}
+
+func (r *Receiver) Process(msg streams.Message) error {
+	return r.ProcessMessage(msg.Key.(string), msg.Value)
+}
+
+func (r *Receiver) Close() error {
+	return nil
 }
